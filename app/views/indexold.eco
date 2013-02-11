@@ -1,0 +1,48 @@
+     <div class="container-fluid">
+
+     <div class="row-fluid">
+     <div id="fits-container"></div>
+      <div id="model-container"></div>
+      <div id="residual-container"></div>     <div id="fits-container"></div>
+      <div id="model-container"></div>
+      <div id="residual-container"></div>
+      </div>
+<div class="row-fluid">
+      <div class="galaxy-model well span6" data-model-name="sersic1">
+        <h2>Sersics Profile 1</h2>
+        <label>CenterX</label>
+        <div class="slider" data-param="centerx"></div>
+        <label>CenterY</label>
+        <div class="slider" data-param="centery"></div>
+        <label>Intensity</label>
+        <div class="slider" data-param="intensity"></div>
+        <label>Eff Radius</label>
+        <div class="slider" data-param="effRadius"></div>
+        <label>N</label>
+        <div class="slider" data-param="n"></div>
+        <label>Angle</label>
+        <div class="slider" data-param="angle"></div>
+        <label>Axis Ratio</label>
+        <div class="slider" data-param="axisRatio"></div>
+      </div>
+            <div class="galaxy-model well span6" data-model-name="sersic1">
+        <h2>Sersics Profile 1</h2>
+        <label>CenterX</label>
+        <div class="slider" data-param="centerx"></div>
+        <label>CenterY</label>
+        <div class="slider" data-param="centery"></div>
+        <label>Intensity</label>
+        <div class="slider" data-param="intensity"></div>
+        <label>Eff Radius</label>
+        <div class="slider" data-param="effRadius"></div>
+        <label>N</label>
+        <div class="slider" data-param="n"></div>
+        <label>Angle</label>
+        <div class="slider" data-param="angle"></div>
+        <label>Axis Ratio</label>
+        <div class="slider" data-param="axisRatio"></div>
+      </div>
+
+
+</div>
+</div>
