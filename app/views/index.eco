@@ -59,6 +59,13 @@
 	      <div class="slider" data-control="param" data-model="sersic1" data-param="intensity"></div>
 	    </div>
 	    <div class="span6">
+	      <span class="label">Effective Radius</span>
+	      <div class="slider" data-control="param" data-model="sersic1" data-param="effRadius"></div>
+	    </div>
+	   </div>
+
+	   <div class="row-fluid">
+	    <div class="span6">
 	      <span class="label">N</span>
 	      <div class="slider" data-control="param" data-model="sersic1" data-param="n"></div>
 	    </div>
@@ -95,19 +102,27 @@
 	      <span class="label">CenterY</span>
 	      <div class="slider" data-control="param" data-model="sersic2" data-param="centerY"></div>
 	    </div>
-
 	  </div>
+
 	  <div class="row-fluid">
            <div class="span6">
 	      <span class="label">Intensity</span>
 	      <div class="slider" data-control="param" data-model="sersic2" data-param="intensity"></div>
 	    </div>
 	    <div class="span6">
+	      <span class="label">Effective Radius</span>
+	      <div class="slider" data-control="param" data-model="sersic2" data-param="effRadius"></div>
+	    </div>
+	   </div>
+
+	   <div class="row-fluid">
+	    <div class="span6">
 	      <span class="label">N</span>
 	      <div class="slider" data-control="param" data-model="sersic2" data-param="n"></div>
 	    </div>
 	  </div>
-	  	  <div class="row-fluid">
+
+	  <div class="row-fluid">
             <div class="span6">
 	      <span class="label">Axis Ratio</span>
 	      <div class="slider" data-control="param" data-model="sersic2" data-param="axisRatio"></div>

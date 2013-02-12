@@ -151,7 +151,7 @@ class App extends Spine.Controller
           $(obj).slider(
             min: 0
             max: 10
-            step: .1
+            step: .01
             value: model.params.n)
         when "angle"
           $(obj).slider(
@@ -163,6 +163,12 @@ class App extends Spine.Controller
           $(obj).slider(
             min: 1
             max: 3
+            step: 0.01
+            value: model.params.axisRatio)
+        when "effRadius"
+          $(obj).slider(
+            min: 0
+            max: 15
             step: 0.01
             value: model.params.axisRatio)
         else
