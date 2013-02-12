@@ -12,7 +12,6 @@ class App extends Spine.Controller
     "slide .model-controls .slider": "control"
   
   
-  
   constructor: ->
     super
     xhr = new XMLHttpRequest()
@@ -20,7 +19,8 @@ class App extends Spine.Controller
     xhr.responseType = 'arraybuffer'
     xhr.send()
     @render()
-     
+    
+    $(window).resize(@resize)
 
     xhr.onload = (e) =>
       #Set up fits file
@@ -119,6 +119,8 @@ class App extends Spine.Controller
     @modeler.build()
     @modelDisplay.processImage()
     @modelDisplay.draw()
+    @resDisplay.min = Galactic.utils.min(@modeler.residual.data)
+    @resDisplay.max = Galactic.utils.max(@modeler.residual.data)
     @resDisplay.processImage()
     @resDisplay.draw()
 
@@ -163,9 +165,10 @@ class App extends Spine.Controller
             max: 3
             step: 0.01
             value: model.params.axisRatio)
-
         else
           $(obj).slider()
+
+
 
 module.exports = App
     
