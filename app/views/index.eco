@@ -15,6 +15,23 @@
         <span class="label">Define Range</span>
 	<div id="range-slider"></div>
       </div>
+      <div class="span2">
+        <span class="label">Choose Colormap</span>
+	<select id="colormap" class="span12">
+           <option value="gray">Grayscale</option>
+	   <option value="red">Red</option>
+	   <option value="green">Green</option>
+	   <option value="blue">Blue</option>
+	   <option value="heat">Heat</option>
+	   <option value="a">A</option>
+	   <option value="b">B</option>
+	   <option value="bb">BB</option>
+	   <option value="cool">Cool</option>
+	   <option value="he">He</option>
+	   <option value="rainbow">Rainbow</option>
+	   <option value="standard">Standard</option>
+	</select>
+      </div>
     </div>
   </div>
   

@@ -8,8 +8,11 @@ class App extends Spine.Controller
   events:
     "change #stretch": "stretch"
     "slide #range-slider": "range"
-    "click .model-controls button": "control"
+    "click .model-controls button": "buttonControl"
     "slide .model-controls .slider": "control"
+    "change #colormap": "colormap"
+    "keyup #colormap": "colormap"
+    "keyup #stretch": "stretch"
   
   
   constructor: ->
@@ -34,8 +37,9 @@ class App extends Spine.Controller
 
       #Set up main display for fits file
       @fitsDisplay = new Galactic.Display('fits-container',300,image)
-      @fitsDisplay.min = min
-      @fitsDisplay.max = max
+      fitsDisplay = @fitsDisplay
+      fitsDisplay.min = min
+      fitsDisplay.max = max
 
       #Set up the range slider for adjusting stretch
       $("#range-slider").slider(
@@ -50,26 +54,29 @@ class App extends Spine.Controller
       
 
       @modeler = new Galactic.Modeler(image)
+      modeler = @modeler
 
-      @modeler.addModel("sersic1","sersic")
-      @modeler.addModel("sersic2","sersic")
+      modeler.addModel("sersic1","sersic")
+      modeler.addModel("sersic2","sersic")
 
-      @modeler.enableModel("sersic1")
-      @modeler.disableModel("sersic2")
+      modeler.enableModel("sersic1")
+      modeler.disableModel("sersic2")
 
-      @modeler.build()
+      modeler.build()
 
       @modelDisplay = new Galactic.Display('model-container',300,@modeler.image)
+      modelDisplay = @modelDisplay
       @resDisplay = new Galactic.Display('residual-container',300,@modeler.residual)
+      resDisplay = @resDisplay
 
       @initSliders()
       
-      @modelDisplay.processImage()
-      @modelDisplay.draw()
-      @fitsDisplay.processImage()
-      @fitsDisplay.draw()
-      @resDisplay.processImage()
-      @resDisplay.draw()
+      fitsDisplay.processImage()
+      fitsDisplay.draw()
+      modelDisplay.processImage()
+      modelDisplay.draw()
+      resDisplay.processImage()
+      resDisplay.draw()
 
   render: =>
     @html require('views/index')
@@ -77,52 +84,95 @@ class App extends Spine.Controller
 
   stretch: (event) =>
     stretch = $(event.target).val()
-    @fitsDisplay.setStretch(stretch)
-    @modelDisplay.setStretch(stretch)
-    @updateDisplays()
+    fitsDisplay = @fitsDisplay
+    modelDisplay = @modelDisplay
+
+    fitsDisplay.setStretch(stretch)
+    modelDisplay.setStretch(stretch)
+
+    fitsDisplay.processImage()
+    modelDisplay.processImage()
+    fitsDisplay.draw()
+    modelDisplay.draw()
+
+  colormap: (event) =>
+    map = $(event.target).val()
+    fitsDisplay = @fitsDisplay
+    modelDisplay = @modelDisplay
+    resDisplay = @resDisplay
+
+    fitsDisplay.setColormap(map)
+    modelDisplay.setColormap(map)
+    resDisplay.setColormap(map)
+
+    fitsDisplay.processImage()
+    fitsDisplay.draw()
+    modelDisplay.processImage()
+    modelDisplay.draw()
+    resDisplay.processImage()
+    resDisplay.draw()
 
   range: (event, ui) =>
     min = ui.values[0]
     max = ui.values[1]
-    @fitsDisplay.min = min
-    @fitsDisplay.max = max
-    @modelDisplay.min = min
-    @modelDisplay.max = max
-    @updateDisplays()
+    fitsDisplay = @fitsDisplay
+    modelDisplay = @modelDisplay
 
-  updateDisplays: ->
-    @fitsDisplay.processImage()
-    @fitsDisplay.draw()
-    @modelDisplay.processImage()
-    @modelDisplay.draw()
-
+    fitsDisplay.min = min
+    fitsDisplay.max = max
+    modelDisplay.min = min
+    modelDisplay.max = max
+    
+    fitsDisplay.processImage()
+    modelDisplay.processImage()
+    fitsDisplay.draw()
+    modelDisplay.draw()
 
   control: (event) =>
     control = $(event.target)
+    model = control.data('model')
+    modeler = @modeler
+    modelDisplay = @modelDisplay
+    resDisplay = @resDisplay
+ 
+    param = control.data('param')
+    value = control.slider('value')
+    modeler.updateParam(model,param,value)
+
+    start = (new Date()).getTime()
+    modeler.build()
+    resDisplay.min = Galactic.utils.min(modeler.residual.data)
+    resDisplay.max = Galactic.utils.max(modeler.residual.data)
+    modelDisplay.processImage()
+    resDisplay.processImage()
+    modelDisplay.draw()
+    resDisplay.draw()
+    end = (new Date()).getTime()
+    console.log end-start
+
+
+  buttonControl: (event) =>
+    control = $(event.target)
     type = control.data('control')
     model = control.data('model')
-    
-    console.log model
-    console.log type
+    modeler = @modeler
+    modelDisplay = @modelDisplay
+    resDisplay = @resDisplay
  
     if type == "enable"
-      @modeler.enableModel(model)
+      modeler.enableModel(model)
     if type == "disable"
-      @modeler.disableModel(model)
+      modeler.disableModel(model)
+ 
+    modeler.build()
+    resDisplay.min = Galactic.utils.min(modeler.residual.data)
+    resDisplay.max = Galactic.utils.max(modeler.residual.data)
+    modelDisplay.processImage()
+    resDisplay.processImage()
+    modelDisplay.draw()
+    resDisplay.draw()
 
-    if type == "param"
-      param = control.data('param')
-      value = control.slider('value')
-      console.log value
-      @modeler.updateParam(model,param,value)
 
-    @modeler.build()
-    @modelDisplay.processImage()
-    @modelDisplay.draw()
-    @resDisplay.min = Galactic.utils.min(@modeler.residual.data)
-    @resDisplay.max = Galactic.utils.max(@modeler.residual.data)
-    @resDisplay.processImage()
-    @resDisplay.draw()
 
   initSliders: ->
     $('.slider').each (i,obj) =>
@@ -170,7 +220,7 @@ class App extends Spine.Controller
             min: 0
             max: 15
             step: 0.01
-            value: model.params.axisRatio)
+            value: model.params.effRadius)
         else
           $(obj).slider()
 

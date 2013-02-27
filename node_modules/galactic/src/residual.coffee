@@ -8,8 +8,10 @@ class Residual extends Image
   #Finds the difference between the
   #fits and model data and stores it
   build: (fitsData,modelData) ->
-    for index in [0..(@width*@height)]
-      @data[index] = fitsData[index] - modelData[index]
+    data = @data
+    i = @width*@height
+    while i--
+      data[i] = fitsData[i] - modelData[i]
     undefined
 
 module?.exports = Residual
