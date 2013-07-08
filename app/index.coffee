@@ -4,7 +4,7 @@ Spine = require('spine')
 $ = jQuery
 
 class App extends Spine.Controller
-  
+
   events:
     "change #stretch": "stretch"
     "slide #range-slider": "range"
@@ -13,218 +13,250 @@ class App extends Spine.Controller
     "change #colormap": "colormap"
     "keyup #colormap": "colormap"
     "keyup #stretch": "stretch"
-  
-  
+
   constructor: ->
     super
-    xhr = new XMLHttpRequest()
-    xhr.open('GET', 'images/cutout.fits')
-    xhr.responseType = 'arraybuffer'
-    xhr.send()
+
+    @fits_loaded = false
+    @psf_loaded = false
+
+    fits_xhr = new XMLHttpRequest()
+    fits_xhr.open('GET', 'images/test_cutout.fits')
+    fits_xhr.responseType = 'arraybuffer'
+
+    psf_xhr = new XMLHttpRequest()
+    psf_xhr.open('GET', 'images/test_psf.fits')
+    psf_xhr.responseType = 'arraybuffer'
+
+
+    fits_xhr.onload = $.proxy(@set_up_fits, this, fits_xhr)
+    fits_xhr.send()
+
+    psf_xhr.onload = $.proxy(@set_up_psf, this, psf_xhr)
+    psf_xhr.send()
+
     @render()
-    
-    $(window).resize(@resize)
 
-    xhr.onload = (e) =>
-      #Set up fits file
-      fitsFile = new FITS.File(xhr.response)
-      image = fitsFile.getDataUnit()
-      image.getFrame()
+  set_up_fits: (fits_xhr) ->
+    fitsFile = new FITS.File(fits_xhr.response)
+    image = fitsFile.getDataUnit()
+    data = image.getFrame()
 
-      #Find min and max for stretches
-      min = Galactic.utils.min(image.data)
-      max = Galactic.utils.max(image.data)
+    @fits_image = new Galactic.Image(width: image.width, height: image.height)
 
-      #Set up main display for fits file
-      @fitsDisplay = new Galactic.Display('fits-container',300,image)
-      fitsDisplay = @fitsDisplay
-      fitsDisplay.min = min
-      fitsDisplay.max = max
+    l = image.width*image.height
+    while l--
+      @fits_image.data[l] = data[l]
 
-      #Set up the range slider for adjusting stretch
-      $("#range-slider").slider(
-        range: true
-        values: [min, max]
-        min: min
-        max: max
-        step: (max - min)/100)
+    Galactic.utils.arrayutils.shift_to_zero(@fits_image.data)
 
-      #Show first tab
-      $("#model-tabs a:first").tab('show')
-      
+    @fits_loaded = true
 
-      @modeler = new Galactic.Modeler(image)
-      modeler = @modeler
+    if @psf_loaded
+      @set_up_app()
 
-      modeler.addModel("sersic1","sersic")
-      modeler.addModel("sersic2","sersic")
+  set_up_psf: (psf_xhr) ->
+    psfFile = new FITS.File(psf_xhr.response)
+    image = psfFile.getDataUnit()
+    data = image.getFrame()
 
-      modeler.enableModel("sersic1")
-      modeler.disableModel("sersic2")
+    @psf_image = new Galactic.Image(width: image.width, height: image.height)
 
-      modeler.build()
+    l = image.width*image.height
+    while l--
+      @psf_image.data[l] = data[l]
 
-      @modelDisplay = new Galactic.Display('model-container',300,@modeler.image)
-      modelDisplay = @modelDisplay
-      @resDisplay = new Galactic.Display('residual-container',300,@modeler.residual)
-      resDisplay = @resDisplay
+    Galactic.utils.arrayutils.shift_to_zero(@psf_image.data)
+    Galactic.utils.arrayutils.normalize_to_one(@psf_image.data)
 
-      @initSliders()
-      
-      fitsDisplay.processImage()
-      fitsDisplay.draw()
-      modelDisplay.processImage()
-      modelDisplay.draw()
-      resDisplay.processImage()
-      resDisplay.draw()
+    if @fits_loaded
+      @set_up_app()
+
+  set_up_app: ->
+
+    width = 300
+    height = Math.round((@fits_image.height/@fits_image.width)*width)
+
+    @fits_display = new Galactic.Display(container: 'fits-container', width: width, height: height)
+    @model_display = new Galactic.Display(container: 'model-container', width: width, height: height)
+    @residual_display = new Galactic.Display(container: 'residual-container', width: width, height: height)
+
+
+    @modeler = new Galactic.Modeler(@fits_image)
+    @residual = new Galactic.Residual(fitsData: @fits_image.data, modelData: @modeler.image.data, width: @fits_image.width, height: @fits_image.height)
+    modeler = @modeler
+
+    modeler.add("sersic1","sersic")
+    modeler.add("sersic2","sersic")
+    modeler.enable("sersic1")
+    modeler.disable("sersic2")
+
+    @convolutor = new Galactic.PSFConvolutor(model: modeler.image, psf: @psf_image)
+
+    modeler.build()
+    @convolutor.convolute()
+    @residual.build()
+
+
+    @fits_formatter = new Galactic.ImageFormatter(input: @fits_image)
+    @model_formatter = new Galactic.ImageFormatter(input: @modeler.image)
+    @residual_formatter = new Galactic.ImageFormatter(input: @residual)
+
+    min = @fits_formatter.min
+    max = @fits_formatter.max
+
+    @model_formatter.min = min
+    @model_formatter.max = max
+    @residual_formatter.min = min
+    @residual_formatter.max = max
+
+    #Set up the range slider for adjusting stretch
+    $("#range-slider").slider(
+      range: true
+      values: [min, max]
+      min: min
+      max: max
+      step: (max - min)/100)
+
+    #Show first tab
+    $("#model-tabs a:first").tab('show')
+
+    @initSliders()
+
+    fits_image = @fits_formatter.convert()
+    model_image = @model_formatter.convert()
+    residual_image = @residual_formatter.convert()
+
+    @fits_display.draw(fits_image)
+    @model_display.draw(model_image)
+    @residual_display.draw(residual_image)
+
+
+  update_modeling: ->
+    @model_display.draw(@model_formatter.convert())
+    @residual_display.draw(@residual_formatter.convert())
+
+  update_all: ->
+    @fits_display.draw(@fits_formatter.convert())
+    @update_modeling()
 
   render: =>
     @html require('views/index')
 
-
   stretch: (event) =>
     stretch = $(event.target).val()
-    fitsDisplay = @fitsDisplay
-    modelDisplay = @modelDisplay
 
-    fitsDisplay.setStretch(stretch)
-    modelDisplay.setStretch(stretch)
+    @fits_formatter.setStretch(stretch)
+    @model_formatter.setStretch(stretch)
+    @residual_formatter.setStretch(stretch)
 
-    fitsDisplay.processImage()
-    modelDisplay.processImage()
-    fitsDisplay.draw()
-    modelDisplay.draw()
+    @update_all()
+
 
   colormap: (event) =>
     map = $(event.target).val()
-    fitsDisplay = @fitsDisplay
-    modelDisplay = @modelDisplay
-    resDisplay = @resDisplay
 
-    fitsDisplay.setColormap(map)
-    modelDisplay.setColormap(map)
-    resDisplay.setColormap(map)
+    @fits_formatter.setColormap(map)
+    @model_formatter.setColormap(map)
+    @residual_formatter.setColormap(map)
 
-    fitsDisplay.processImage()
-    fitsDisplay.draw()
-    modelDisplay.processImage()
-    modelDisplay.draw()
-    resDisplay.processImage()
-    resDisplay.draw()
+    @update_all()
+
 
   range: (event, ui) =>
     min = ui.values[0]
     max = ui.values[1]
-    fitsDisplay = @fitsDisplay
-    modelDisplay = @modelDisplay
 
-    fitsDisplay.min = min
-    fitsDisplay.max = max
-    modelDisplay.min = min
-    modelDisplay.max = max
-    
-    fitsDisplay.processImage()
-    modelDisplay.processImage()
-    fitsDisplay.draw()
-    modelDisplay.draw()
+    @fits_formatter.min = min
+    @fits_formatter.max = max
+
+    @model_formatter.min = min
+    @model_formatter.max = max
+
+    @residual_formatter.min = min
+    @residual_formatter.max = max
+
+    @update_all()
 
   control: (event) =>
     control = $(event.target)
     model = control.data('model')
+
     modeler = @modeler
-    modelDisplay = @modelDisplay
-    resDisplay = @resDisplay
- 
+
     param = control.data('param')
     value = control.slider('value')
     modeler.updateParam(model,param,value)
 
-    start = (new Date()).getTime()
     modeler.build()
-    resDisplay.min = Galactic.utils.min(modeler.residual.data)
-    resDisplay.max = Galactic.utils.max(modeler.residual.data)
-    modelDisplay.processImage()
-    resDisplay.processImage()
-    modelDisplay.draw()
-    resDisplay.draw()
-    end = (new Date()).getTime()
-    console.log end-start
-
+    @convolutor.convolute()
+    @residual.build()
+    @update_modeling()
 
   buttonControl: (event) =>
     control = $(event.target)
     type = control.data('control')
     model = control.data('model')
     modeler = @modeler
-    modelDisplay = @modelDisplay
-    resDisplay = @resDisplay
- 
+
     if type == "enable"
-      modeler.enableModel(model)
+      modeler.enable(model)
     if type == "disable"
-      modeler.disableModel(model)
- 
+      modeler.disable(model)
+
     modeler.build()
-    resDisplay.min = Galactic.utils.min(modeler.residual.data)
-    resDisplay.max = Galactic.utils.max(modeler.residual.data)
-    modelDisplay.processImage()
-    resDisplay.processImage()
-    modelDisplay.draw()
-    resDisplay.draw()
-
-
+    @convolutor.convolute()
+    @residual.build()
+    @update_modeling()
 
   initSliders: ->
     $('.slider').each (i,obj) =>
-      model = @modeler.findModel($(obj).data('model'))
+      model = @modeler.find($(obj).data('model'))
       param = $(obj).data('param')
       switch param
         when "intensity"
           $(obj).slider(
             min: 0
-            max: 10
-            step: 0.01
-            value: model.params.intensity)
+            max: 1000000
+            step: 10
+            value: model.intensity)
         when "centerX"
           $(obj).slider(
             min: 0
             max: model.width
             step: 0.5
-            value: model.params.centerX)
+            value: model.centerX)
         when "centerY"
           $(obj).slider(
             min: 0
             max: model.width
             step: 0.5
-            value: model.params.centerY)
+            value: model.centerY)
         when "n"
           $(obj).slider(
             min: 0
             max: 10
             step: .01
-            value: model.params.n)
+            value: model.n)
         when "angle"
           $(obj).slider(
             min: 0
             max: 2*Math.PI
             step: 0.1
-            value: model.params.angle)
+            value: model.angle)
         when "axisRatio"
           $(obj).slider(
             min: 1
             max: 3
             step: 0.01
-            value: model.params.axisRatio)
+            value: model.axisRatio)
         when "effRadius"
           $(obj).slider(
             min: 0
-            max: 15
+            max: 100
             step: 0.01
-            value: model.params.effRadius)
+            value: model.effRadius)
         else
           $(obj).slider()
 
-
-
 module.exports = App
-    
