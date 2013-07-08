@@ -17,23 +17,13 @@ class App extends Spine.Controller
   constructor: ->
     super
 
-    @fits_loaded = false
-    @psf_loaded = false
 
     fits_xhr = new XMLHttpRequest()
     fits_xhr.open('GET', 'images/test_cutout.fits')
     fits_xhr.responseType = 'arraybuffer'
-
-    psf_xhr = new XMLHttpRequest()
-    psf_xhr.open('GET', 'images/test_psf.fits')
-    psf_xhr.responseType = 'arraybuffer'
-
-
     fits_xhr.onload = $.proxy(@set_up_fits, this, fits_xhr)
     fits_xhr.send()
 
-    psf_xhr.onload = $.proxy(@set_up_psf, this, psf_xhr)
-    psf_xhr.send()
 
     @render()
 
@@ -50,10 +40,11 @@ class App extends Spine.Controller
 
     Galactic.utils.arrayutils.shift_to_zero(@fits_image.data)
 
-    @fits_loaded = true
-
-    if @psf_loaded
-      @set_up_app()
+    psf_xhr = new XMLHttpRequest()
+    psf_xhr.open('GET', 'images/test_psf.fits')
+    psf_xhr.responseType = 'arraybuffer'
+    psf_xhr.onload = $.proxy(@set_up_psf, this, psf_xhr)
+    psf_xhr.send()
 
   set_up_psf: (psf_xhr) ->
     psfFile = new FITS.File(psf_xhr.response)
@@ -66,10 +57,10 @@ class App extends Spine.Controller
     while l--
       @psf_image.data[l] = data[l]
 
+    Galactic.utils.arrayutils.shift_to_zero(@psf_image.data)
     Galactic.utils.arrayutils.normalize_to_one(@psf_image.data)
 
-    if @fits_loaded
-      @set_up_app()
+    @set_up_app()
 
   set_up_app: ->
 
