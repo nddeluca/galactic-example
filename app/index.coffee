@@ -66,7 +66,6 @@ class App extends Spine.Controller
     while l--
       @psf_image.data[l] = data[l]
 
-    Galactic.utils.arrayutils.shift_to_zero(@psf_image.data)
     Galactic.utils.arrayutils.normalize_to_one(@psf_image.data)
 
     if @fits_loaded
@@ -217,8 +216,8 @@ class App extends Spine.Controller
         when "intensity"
           $(obj).slider(
             min: 0
-            max: 1000000
-            step: 10
+            max: 10000000
+            step: 100
             value: model.intensity)
         when "centerX"
           $(obj).slider(
